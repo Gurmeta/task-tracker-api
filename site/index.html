@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Task Tracker API</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%232f5fd0%27/%3E%3Cpath d=%27M9 17l5 5 9-11%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%273.5%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
   <meta name="description" content="A REST API built with C# and .NET 10: Minimal API, EF Core, SQLite, xUnit, Docker and GitHub Actions CI/CD.">
   <style>
     :root {
@@ -70,6 +71,11 @@
       overflow-x: auto; margin: 0 0 12px; font-size: 0.9rem;
     }
     pre code { background: none; padding: 0; }
+    #endpoints ul { list-style: none; margin: 0; padding: 0; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
     .endpoint {
       display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
       padding: 10px 0; border-top: 1px solid var(--border);
@@ -175,6 +181,8 @@
   "createdAt": "2026-10-19T13:00:00Z",
   "dueDate": "2026-12-01T00:00:00Z"
 }</code></pre>
+  <p>List tasks one page at a time. The <code>X-Total-Count</code> response header has the total:</p>
+  <pre><code>curl -i "http://localhost:8080/tasks?limit=20&amp;offset=40"</code></pre>
   <p class="note">Invalid input returns <code>400</code> with the errors listed per field. <code>GET /version</code> reports the running version.</p>
 
   <h2>CI/CD</h2>
@@ -207,12 +215,13 @@ curl http://localhost:8080/health</code></pre>
     function render(spec) {
       box.textContent = "";
       var order = ["get", "post", "put", "delete"];
+      var list = document.createElement("ul");
       Object.keys(spec.paths || {}).forEach(function (path) {
         order.forEach(function (method) {
           var op = spec.paths[path][method];
           if (!op) { return; }
 
-          var row = document.createElement("div");
+          var row = document.createElement("li");
           row.className = "endpoint";
 
           var badge = document.createElement("span");
@@ -227,14 +236,19 @@ curl http://localhost:8080/health</code></pre>
 
           var codes = document.createElement("span");
           codes.className = "codes";
-          codes.textContent = Object.keys(op.responses || {}).join(", ");
+          var label = document.createElement("span");
+          label.className = "sr-only";
+          label.textContent = "Responses: ";
+          codes.append(label, Object.keys(op.responses || {}).join(", "));
 
           row.append(badge, name, summary, codes);
-          box.appendChild(row);
+          list.appendChild(row);
         });
       });
 
-      if (!box.children.length) {
+      if (list.children.length) {
+        box.appendChild(list);
+      } else {
         box.textContent = "No endpoints found in the OpenAPI document.";
       }
     }
