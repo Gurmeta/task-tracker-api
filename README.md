@@ -12,7 +12,7 @@ It is a learning project that follows a production-style workflow: tests, contai
 | 3     | Full CRUD, validation, correct HTTP status codes   | done    |
 | 4     | SQLite with Entity Framework Core                  | done    |
 | 5     | xUnit tests                                        | done    |
-| 6     | Dockerfile                                         | planned |
+| 6     | Dockerfile                                         | done    |
 | 7     | GitHub Actions: build, test, publish image to GHCR | planned |
 
 ## Requirements
@@ -28,6 +28,21 @@ dotnet run --project src/TaskTracker.Api
 In Development the OpenAPI document is available at `/openapi/v1.json`.
 Sample requests live in `src/TaskTracker.Api/TaskTracker.Api.http`
 (use the REST Client extension for VS Code).
+
+## Docker
+
+The [Dockerfile](Dockerfile) is a multi-stage build: the .NET SDK image compiles the app,
+and only the published output is copied into the smaller ASP.NET runtime image.
+The container runs as a non-root user, listens on port 8080 and keeps the SQLite file in `/data`.
+
+```bash
+docker build -t task-tracker-api .
+docker run --rm -p 8080:8080 -v task-tracker-data:/data task-tracker-api
+curl http://localhost:8080/health
+```
+
+The container runs in Production mode, so the OpenAPI document is not exposed.
+`GET /health` returns `200 Healthy` and can be used as a liveness probe.
 
 ## Configuration
 

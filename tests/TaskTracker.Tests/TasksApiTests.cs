@@ -239,6 +239,15 @@ public class TasksApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Health_ReturnsHealthy()
+    {
+        var response = await _client.GetAsync("/health");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Healthy", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task OpenApiDocument_IsAvailableInDevelopment()
     {
         var response = await _client.GetAsync("/openapi/v1.json");
