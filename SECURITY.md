@@ -20,6 +20,12 @@ Include what you found, how to reproduce it and which version is affected.
 You can expect an acknowledgement within a few days. Because this is a small
 learning project maintained by one person, fixes are made on a best-effort basis.
 
+## Known limitations
+
+The API has no authentication, authorization or rate limiting, by design. It is a learning project.
+Reports that only point out these missing features are not treated as vulnerabilities.
+See "Scope and limitations" in the [README](README.md).
+
 ## Security practices in this repository
 
 - The CI pipeline fails when a NuGet package with a known vulnerability is found.

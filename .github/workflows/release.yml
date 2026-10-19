@@ -23,6 +23,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0 # full history, needed to check that the tag is on main
+
+      # Only commits that went through the protected main branch may be released.
+      - name: Check that the tagged commit is on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Tag ${GITHUB_REF_NAME} points to a commit that is not on main"
+            exit 1
+          fi
 
       # The tag and the <Version> in the csproj must agree, so a release can never
       # ship with a wrong version number. A pre-release suffix (-rc.1) is ignored here.

@@ -31,6 +31,10 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
 
 builder.Services.AddHealthChecks();
 
+// Error responses (404, malformed JSON, unknown status filter, unexpected failures) get a
+// problem details JSON body instead of an empty one.
+builder.Services.AddProblemDetails();
+
 // Scoped: one DbContext and one store per HTTP request.
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
 builder.Services.AddScoped<ITaskStore, EfTaskStore>();
@@ -47,6 +51,13 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+else
+{
+    // Unhandled exceptions become a generic 500 problem details body; no stack trace leaks.
+    app.UseExceptionHandler();
+}
+
+app.UseStatusCodePages();
 
 // Liveness probe for Docker, Kubernetes and load balancers: 200 means the process is up.
 app.MapHealthChecks("/health");

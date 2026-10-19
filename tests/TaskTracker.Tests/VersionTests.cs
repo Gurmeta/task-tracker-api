@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Hosting;
 using TaskTracker.Api;
 
 namespace TaskTracker.Tests;
@@ -29,8 +28,8 @@ public class VersionTests : IDisposable
     [Fact]
     public async Task OpenApiDocument_DoesNotAdvertiseLocalServers()
     {
-        using var devFactory = _factory.WithWebHostBuilder(b => b.UseEnvironment("Development"));
-        using var client = devFactory.CreateClient();
+        // WebApplicationFactory runs the app in Development, where the OpenAPI endpoint is mapped.
+        using var client = _factory.CreateClient();
 
         var json = await client.GetStringAsync("/openapi/v1.json");
 
@@ -45,9 +44,7 @@ public class VersionTests : IDisposable
     [Fact]
     public async Task OpenApiDocument_UsesTheAppVersion()
     {
-        // The OpenAPI endpoint is only mapped in Development.
-        using var devFactory = _factory.WithWebHostBuilder(b => b.UseEnvironment("Development"));
-        using var client = devFactory.CreateClient();
+        using var client = _factory.CreateClient();
 
         var response = await client.GetAsync("/openapi/v1.json");
 

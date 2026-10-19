@@ -83,8 +83,28 @@ Example response of the create call (`201 Created`):
 }
 ```
 
-Invalid input returns `400` with a validation problem document that lists the errors per field.
 Status values are words (`Todo`, `InProgress`, `Done`), not numbers.
+
+### Errors
+
+Every error response is a JSON problem details document ([RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)),
+with `Content-Type: application/problem+json`. Validation errors also list the problems per field.
+
+```bash
+curl -i http://localhost:8080/tasks/999
+```
+
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+  "title": "Task not found",
+  "status": 404,
+  "detail": "Task 999 was not found.",
+  "traceId": "00-dbb9c35a8df7e5faffb09776acfbb60c-d348310c05bba028-00"
+}
+```
+
+`traceId` identifies the request in the service logs.
 
 ## API
 
@@ -155,6 +175,18 @@ Pushing a tag such as `v1.0.0` publishes these image tags:
 
 Pre-release tags such as `v1.0.0-rc.1` publish only their own tag. See the [CHANGELOG](CHANGELOG.md)
 and the [Releases page](https://github.com/Gurmeta/task-tracker-api/releases).
+
+## Scope and limitations
+
+This is a learning and portfolio project, not a production-ready service. On purpose, it does not have:
+
+- **Authentication or authorization.** Every caller can read and change every task.
+  Do not expose it to the internet as it is; put it behind a gateway that handles access.
+- **Rate limiting.** There is no protection against a client sending many requests.
+- **Pagination.** `GET /tasks` returns all tasks, so the response grows with the data.
+- **Multiple instances.** The data is one SQLite file, so run a single instance.
+  Back it up by copying the `/data` volume while the container is stopped.
+- **Users or ownership.** Tasks are not linked to anyone.
 
 ## Security
 
