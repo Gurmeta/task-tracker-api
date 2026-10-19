@@ -40,7 +40,9 @@ jobs:
       # so they are left out of the numbers.
       - name: Test with coverage
         run: |
-          dotnet test --no-build --configuration Release             --collect:"XPlat Code Coverage" --results-directory coverage             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/**"
+          dotnet test --no-build --configuration Release \
+            --collect:"XPlat Code Coverage" --results-directory coverage \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/**"
 
       - name: Coverage summary
         if: always()
