@@ -158,7 +158,9 @@
 
   <h2>Example request</h2>
   <p>Create a task, then read it back:</p>
-  <pre><code>curl -X POST http://localhost:8080/tasks   -H "Content-Type: application/json"   -d '{"title": "Write the docs", "dueDate": "2026-12-01T00:00:00Z"}'</code></pre>
+  <pre><code>curl -X POST http://localhost:8080/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Write the docs", "dueDate": "2026-12-01T00:00:00Z"}'</code></pre>
   <p>Response, <code>201 Created</code>:</p>
   <pre><code>{
   "id": 1,
