@@ -1,0 +1,19 @@
+# Keep the build context small and free of local data and secrets.
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+.git/
+.github/
+tests/
+docs/
+*.db
+*.db-shm
+*.db-wal
+**/appsettings.Development.json
+**/.env
+**/*.user
+Dockerfile
+.dockerignore
+README.md
+LICENSE

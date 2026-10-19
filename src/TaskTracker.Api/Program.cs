@@ -18,6 +18,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
 
+builder.Services.AddHealthChecks();
+
 // Scoped: one DbContext and one store per HTTP request.
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
 builder.Services.AddScoped<ITaskStore, EfTaskStore>();
@@ -34,6 +36,9 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+// Liveness probe for Docker, Kubernetes and load balancers: 200 means the process is up.
+app.MapHealthChecks("/health");
 
 app.MapTaskEndpoints();
 
