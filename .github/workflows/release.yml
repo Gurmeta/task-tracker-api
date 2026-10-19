@@ -1,0 +1,173 @@
+name: Release
+
+# Runs only when a version tag such as v1.0.0 (or v1.0.0-rc.1) is pushed.
+on:
+  push:
+    tags: ["v*"]
+
+# Least privilege: jobs get read-only access unless they ask for more.
+permissions:
+  contents: read
+
+# Never cancel a release halfway through.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Verify version and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The tag and the <Version> in the csproj must agree, so a release can never
+      # ship with a wrong version number. A pre-release suffix (-rc.1) is ignored here.
+      - name: Check that the tag matches the project version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          tag_version="${TAG#v}"
+          tag_version="${tag_version%%-*}"
+          project_version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/TaskTracker.Api/TaskTracker.Api.csproj)"
+          echo "Tag: ${TAG} -> ${tag_version}; csproj Version: ${project_version}"
+          if [ "$tag_version" != "$project_version" ]; then
+            echo "::error::Tag ${TAG} does not match <Version>${project_version}</Version> in the csproj"
+            exit 1
+          fi
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release
+
+  image:
+    name: Build, smoke-test and publish image
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write # lets the built-in GITHUB_TOKEN push to ghcr.io; no personal token is used
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # v1.0.0 -> tags 1.0.0, 1.0 and latest. A pre-release (v1.0.0-rc.1) only gets
+      # its own tag, so "latest" keeps pointing at the last stable release.
+      - name: Image tags and labels
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+
+      # Build once into the local Docker daemon so we can test the exact image we would publish.
+      - name: Build image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          push: false
+          tags: task-tracker-api:release
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test the container
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          docker run -d --name task-tracker -p 8080:8080 task-tracker-api:release
+
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:8080/health && break
+            sleep 1
+          done
+
+          echo
+          version_response="$(curl -fsS http://localhost:8080/version)"
+          echo "$version_response"
+
+          expected="${TAG#v}"
+          expected="${expected%%-*}"
+          if ! echo "$version_response" | grep -q "\"version\":\"${expected}\""; then
+            echo "::error::/version does not report ${expected}"
+            exit 1
+          fi
+
+          user="$(docker inspect --format '{{.Config.User}}' task-tracker)"
+          echo "Container user: ${user:-<empty>}"
+          if [ -z "$user" ] || [ "$user" = "0" ] || [ "$user" = "root" ]; then
+            echo "::error::Container must not run as root"
+            exit 1
+          fi
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs task-tracker || true
+
+      - name: Remove container
+        if: always()
+        run: docker rm -f task-tracker || true
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+
+  release:
+    name: Create GitHub Release
+    needs: image
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # the only job that may write: it creates the Release
+    steps:
+      # The gh CLI is preinstalled on GitHub runners and uses the built-in GITHUB_TOKEN,
+      # so no third-party action and no personal token are needed.
+      - name: Create release with generated notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          prerelease_flag=""
+          case "$TAG" in
+            *-*) prerelease_flag="--prerelease" ;;
+          esac
+
+          gh release create "$TAG" \
+            --repo "$REPO" \
+            --verify-tag \
+            --title "$TAG" \
+            --generate-notes \
+            $prerelease_flag
