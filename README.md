@@ -112,13 +112,25 @@ curl -i http://localhost:8080/tasks/999
 | ------ | ------------- | ------------------------- | -------- | ----------------------- |
 | GET    | `/health`     | 200                       |          | Liveness probe          |
 | GET    | `/version`    | 200                       |          | Running service version |
-| GET    | `/tasks`      | 200 (optional `?status=`) | 400      | List tasks              |
+| GET    | `/tasks`      | 200 (`?status=`, `?limit=`, `?offset=`) | 400 | List tasks (one page) |
 | GET    | `/tasks/{id}` | 200                       | 404      | Get one task            |
 | POST   | `/tasks`      | 201 + `Location`          | 400      | Create a task           |
 | PUT    | `/tasks/{id}` | 200                       | 400, 404 | Replace a task          |
 | DELETE | `/tasks/{id}` | 204                       | 404      | Delete a task           |
 
 Constraints: `title` is required (max 100 characters), `description` is optional (max 500).
+Request bodies larger than 64 KB are rejected with `413`.
+
+### Pagination
+
+`GET /tasks` returns one page, ordered by id. Use `limit` (1 to 500, default 100) and `offset` (0 or more, default 0).
+The `X-Total-Count` response header has the number of tasks that match the filter, so a client knows when to stop.
+
+```bash
+curl -i "http://localhost:8080/tasks?status=Todo&limit=20&offset=40"
+```
+
+An out-of-range value returns `400` with the problem details document naming the field.
 
 ## Configuration
 
@@ -183,7 +195,7 @@ This is a learning and portfolio project, not a production-ready service. On pur
 - **Authentication or authorization.** Every caller can read and change every task.
   Do not expose it to the internet as it is; put it behind a gateway that handles access.
 - **Rate limiting.** There is no protection against a client sending many requests.
-- **Pagination.** `GET /tasks` returns all tasks, so the response grows with the data.
+- **Cursor-based paging.** Paging uses `limit` and `offset`, which can skip or repeat tasks if the data changes between requests.
 - **Multiple instances.** The data is one SQLite file, so run a single instance.
   Back it up by copying the `/data` volume while the container is stopped.
 - **Users or ownership.** Tasks are not linked to anyone.

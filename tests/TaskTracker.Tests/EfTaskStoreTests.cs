@@ -71,11 +71,37 @@ public class EfTaskStoreTests : IDisposable
         await _store.AddAsync(new TaskItem { Title = "b", Status = TaskItemStatus.Todo }, CancellationToken.None);
         await _store.AddAsync(new TaskItem { Title = "c", Status = TaskItemStatus.Done }, CancellationToken.None);
 
-        var done = await _store.GetAllAsync(TaskItemStatus.Done, CancellationToken.None);
-        var all = await _store.GetAllAsync(null, CancellationToken.None);
+        var done = await _store.GetAllAsync(TaskItemStatus.Done, 100, 0, CancellationToken.None);
+        var all = await _store.GetAllAsync(null, 100, 0, CancellationToken.None);
 
         Assert.Equal(["a", "c"], done.Select(t => t.Title));
         Assert.Equal(["a", "b", "c"], all.Select(t => t.Title));
+    }
+
+    [Fact]
+    public async Task GetAll_AppliesLimitAndOffsetInIdOrder()
+    {
+        foreach (var title in new[] { "a", "b", "c", "d", "e" })
+        {
+            await _store.AddAsync(new TaskItem { Title = title }, CancellationToken.None);
+        }
+
+        var page = await _store.GetAllAsync(null, 2, 1, CancellationToken.None);
+        var pastTheEnd = await _store.GetAllAsync(null, 2, 10, CancellationToken.None);
+
+        Assert.Equal(["b", "c"], page.Select(t => t.Title));
+        Assert.Empty(pastTheEnd);
+    }
+
+    [Fact]
+    public async Task Count_CountsAllMatchingTasksRegardlessOfPaging()
+    {
+        await _store.AddAsync(new TaskItem { Title = "a", Status = TaskItemStatus.Done }, CancellationToken.None);
+        await _store.AddAsync(new TaskItem { Title = "b", Status = TaskItemStatus.Todo }, CancellationToken.None);
+        await _store.AddAsync(new TaskItem { Title = "c", Status = TaskItemStatus.Done }, CancellationToken.None);
+
+        Assert.Equal(3, await _store.CountAsync(null, CancellationToken.None));
+        Assert.Equal(2, await _store.CountAsync(TaskItemStatus.Done, CancellationToken.None));
     }
 
     [Fact]
