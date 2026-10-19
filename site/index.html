@@ -88,6 +88,11 @@
     figure { margin: 0; }
     figure svg { width: 100%; height: auto; display: block; }
     figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
+    .release { margin: 16px 0 0; color: var(--muted); }
+    .release a { font-weight: 700; }
+    .steps { margin: 0; padding-left: 1.25rem; }
+    .steps li { margin: 0 0 6px; }
+    .steps li:last-child { margin: 0; }
     footer { margin-top: 56px; color: var(--muted); font-size: 0.9rem; }
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   </style>
@@ -100,8 +105,10 @@
     <a href="https://github.com/Gurmeta/task-tracker-api">Source on GitHub</a>
     <a href="https://github.com/Gurmeta/task-tracker-api/actions">CI runs</a>
     <a href="https://github.com/Gurmeta/task-tracker-api/pkgs/container/task-tracker-api">Container image</a>
+    <a href="https://github.com/Gurmeta/task-tracker-api/releases">Releases</a>
     <a href="openapi.json">OpenAPI document</a>
   </nav>
+  <p class="release" id="release" aria-live="polite">Latest release: <a href="https://github.com/Gurmeta/task-tracker-api/releases/latest">see the releases page</a></p>
 
   <h2>What is inside</h2>
   <div class="grid">
@@ -149,8 +156,32 @@
     <p class="note">Loading the endpoint list from the OpenAPI document…</p>
   </div>
 
+  <h2>Example request</h2>
+  <p>Create a task, then read it back:</p>
+  <pre><code>curl -X POST http://localhost:8080/tasks   -H "Content-Type: application/json"   -d '{"title": "Write the docs", "dueDate": "2026-12-01T00:00:00Z"}'</code></pre>
+  <p>Response, <code>201 Created</code>:</p>
+  <pre><code>{
+  "id": 1,
+  "title": "Write the docs",
+  "description": null,
+  "status": "Todo",
+  "createdAt": "2026-10-19T13:00:00Z",
+  "dueDate": "2026-12-01T00:00:00Z"
+}</code></pre>
+  <p class="note">Invalid input returns <code>400</code> with the errors listed per field. <code>GET /version</code> reports the running version.</p>
+
+  <h2>CI/CD</h2>
+  <div class="card">
+    <ol class="steps">
+      <li><strong>Pull request:</strong> build, test, check that EF Core migrations match the model, fail on vulnerable NuGet packages, then build the image and smoke-test the running container (it must not run as root). Nothing is published.</li>
+      <li><strong>Merge to main:</strong> the same checks run again, the image is published to GHCR as <code>latest</code>, and this page is redeployed.</li>
+      <li><strong>Version tag (<code>v1.0.0</code>):</strong> the release workflow checks the tag against the project version, tests, publishes the image as <code>1.0.0</code>, <code>1.0</code> and <code>latest</code>, and creates a GitHub Release with generated notes.</li>
+    </ol>
+  </div>
+  <p class="note">Workflows use minimal permissions and the built-in <code>GITHUB_TOKEN</code>. Third-party actions are pinned to commit SHAs and Dependabot proposes updates weekly.</p>
+
   <h2>Run it</h2>
-  <p>The image is published to the GitHub Container Registry by the CI pipeline:</p>
+  <p>The image is published to the GitHub Container Registry by the pipeline. Pin a version such as <code>:1.0.0</code> for real use:</p>
   <pre><code>docker run --rm -p 8080:8080 -v task-tracker-data:/data ghcr.io/gurmeta/task-tracker-api:latest
 curl http://localhost:8080/health</code></pre>
   <p>Or run from source with the .NET 10 SDK:</p>
@@ -201,12 +232,45 @@ curl http://localhost:8080/health</code></pre>
       }
     }
 
+    var releaseLine = document.getElementById("release");
+    var releasesUrl = "https://github.com/Gurmeta/task-tracker-api/releases/";
+
+    function showRelease(label, url) {
+      releaseLine.textContent = "Latest release: ";
+      var link = document.createElement("a");
+      link.textContent = label;
+      link.href = url;
+      releaseLine.appendChild(link);
+    }
+
+    // Latest release from the public GitHub API. Only links into this repository are used.
+    fetch("https://api.github.com/repos/Gurmeta/task-tracker-api/releases/latest", { headers: { Accept: "application/vnd.github+json" } })
+      .then(function (r) {
+        if (!r.ok) { throw new Error("HTTP " + r.status); }
+        return r.json();
+      })
+      .then(function (release) {
+        var url = typeof release.html_url === "string" && release.html_url.indexOf(releasesUrl) === 0
+          ? release.html_url : releasesUrl + "latest";
+        showRelease(String(release.tag_name || "latest"), url);
+      })
+      .catch(function () { /* keep the static fallback link */ });
+
     fetch("openapi.json")
       .then(function (r) {
         if (!r.ok) { throw new Error("HTTP " + r.status); }
         return r.json();
       })
-      .then(render)
+      .then(function (spec) {
+        render(spec);
+        var v = spec.info && spec.info.version;
+        if (v) {
+          var tag = document.createElement("p");
+          tag.className = "note";
+          tag.textContent = "The API document on this page describes version " + v + ".";
+          box.parentNode.insertBefore(tag, box.nextSibling);
+        }
+      })
       .catch(function () {
         box.textContent = "";
         var p = document.createElement("p");
