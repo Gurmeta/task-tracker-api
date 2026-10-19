@@ -21,8 +21,14 @@ dotnet run --project src/TaskTracker.Api
 2. Use a short branch name with a prefix: `feat/...`, `fix/...`, `docs/...`, `ci/...`.
 3. Make a focused change and add or update tests.
 4. Run `dotnet build` and `dotnet test` locally. Both must pass.
-5. If you change the EF Core model, add a migration:
-   `dotnet ef migrations add <Name> --project src/TaskTracker.Api`.
+5. If you change the EF Core model, add a migration. The `dotnet ef` tool is pinned in
+   `dotnet-tools.json`, so restore it once first:
+
+   ```bash
+   dotnet tool restore
+   dotnet ef migrations add <Name> --project src/TaskTracker.Api
+   ```
+
    CI fails when the model and the migrations are out of sync.
 6. Open a pull request against `main`. CI must be green before it can be merged.
 

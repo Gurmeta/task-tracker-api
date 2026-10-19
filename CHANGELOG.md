@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Every error response now has a problem details JSON body (404, malformed JSON, unknown status filter, unsupported content type, unexpected failures). Status codes are unchanged.
+- The release workflow refuses tags whose commit is not on `main`.
+- Dependabot uses Conventional Commit prefixes and groups the test package updates.
+
+### Added
+
+- "Scope and limitations" and an error format section in the README.
+- Tests for the error response format and for the OpenAPI document not being served in Production.
+
 ## [1.0.1] - 2026-10-19
 
 ### Added
