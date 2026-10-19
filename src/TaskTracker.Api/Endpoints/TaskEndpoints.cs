@@ -21,11 +21,11 @@ public static class TaskEndpoints
         group.MapGet("/{id:int}", async (int id, ITaskStore store, CancellationToken ct) =>
         {
             var task = await store.GetByIdAsync(id, ct);
-            return task is null ? Results.NotFound() : Results.Ok(task);
+            return task is null ? TaskNotFound(id) : Results.Ok(task);
         })
             .WithSummary("Get one task")
             .Produces<TaskItem>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/", async (CreateTaskRequest request, ITaskStore store, CancellationToken ct) =>
         {
@@ -55,19 +55,27 @@ public static class TaskEndpoints
 
             var updated = await store.UpdateAsync(
                 id, request.Title!.Trim(), request.Description?.Trim(), request.Status!.Value, request.DueDate, ct);
-            return updated is null ? Results.NotFound() : Results.Ok(updated);
+            return updated is null ? TaskNotFound(id) : Results.Ok(updated);
         })
             .WithSummary("Replace a task")
             .Produces<TaskItem>(StatusCodes.Status200OK)
             .ProducesValidationProblem()
-            .Produces(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapDelete("/{id:int}", async (int id, ITaskStore store, CancellationToken ct) =>
-            await store.DeleteAsync(id, ct) ? Results.NoContent() : Results.NotFound())
+            await store.DeleteAsync(id, ct) ? Results.NoContent() : TaskNotFound(id))
             .WithSummary("Delete a task")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         return routes;
     }
+
+    // Same error format (RFC 9457 problem details) as the validation errors, so every
+    // error response has a JSON body that says what went wrong.
+    private static IResult TaskNotFound(int id) =>
+        Results.Problem(
+            statusCode: StatusCodes.Status404NotFound,
+            title: "Task not found",
+            detail: $"Task {id} was not found.");
 }
