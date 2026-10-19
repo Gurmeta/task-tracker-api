@@ -15,7 +15,8 @@ Content-Type: application/json
 
 {
   "title": "Learn C#",
-  "description": "Finish stage 3"
+  "description": "Finish stage 4",
+  "dueDate": "2026-12-31T00:00:00Z"
 }
 
 ### Update a task (full replace)

@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
+using TaskTracker.Api.Data;
 using TaskTracker.Api.Endpoints;
 using TaskTracker.Api.Services;
 
@@ -11,10 +13,22 @@ builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false)));
 
-// Singleton: one shared instance, because the in-memory list must survive between requests.
-builder.Services.AddSingleton<ITaskStore, InMemoryTaskStore>();
+// The connection string comes from configuration (appsettings.json or the
+// ConnectionStrings__Default environment variable), so nothing is hardcoded here.
+var connectionString = builder.Configuration.GetConnectionString("Default")
+    ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
+
+// Scoped: one DbContext and one store per HTTP request.
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
+builder.Services.AddScoped<ITaskStore, EfTaskStore>();
 
 var app = builder.Build();
+
+// Create or update the database schema at startup by applying pending migrations.
+using (var scope = app.Services.CreateScope())
+{
+    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+}
 
 if (app.Environment.IsDevelopment())
 {

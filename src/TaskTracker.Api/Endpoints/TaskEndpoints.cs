@@ -12,46 +12,45 @@ public static class TaskEndpoints
         var group = routes.MapGroup("/tasks").WithTags("Tasks");
 
         // GET /tasks or GET /tasks?status=Done
-        group.MapGet("/", (TaskItemStatus? status, ITaskStore store) =>
-        {
-            var tasks = store.GetAll();
-            return Results.Ok(status is null ? tasks : tasks.Where(t => t.Status == status));
-        });
+        group.MapGet("/", async (TaskItemStatus? status, ITaskStore store, CancellationToken ct) =>
+            Results.Ok(await store.GetAllAsync(status, ct)));
 
-        group.MapGet("/{id:int}", (int id, ITaskStore store) =>
+        group.MapGet("/{id:int}", async (int id, ITaskStore store, CancellationToken ct) =>
         {
-            var task = store.GetById(id);
+            var task = await store.GetByIdAsync(id, ct);
             return task is null ? Results.NotFound() : Results.Ok(task);
         });
 
-        group.MapPost("/", (CreateTaskRequest request, ITaskStore store) =>
+        group.MapPost("/", async (CreateTaskRequest request, ITaskStore store, CancellationToken ct) =>
         {
             if (!RequestValidator.TryValidate(request, out var errors))
             {
                 return Results.ValidationProblem(errors);
             }
 
-            var created = store.Add(new TaskItem
+            var created = await store.AddAsync(new TaskItem
             {
                 Title = request.Title!.Trim(),
-                Description = request.Description?.Trim()
-            });
+                Description = request.Description?.Trim(),
+                DueDate = request.DueDate
+            }, ct);
             return Results.Created($"/tasks/{created.Id}", created);
         });
 
-        group.MapPut("/{id:int}", (int id, UpdateTaskRequest request, ITaskStore store) =>
+        group.MapPut("/{id:int}", async (int id, UpdateTaskRequest request, ITaskStore store, CancellationToken ct) =>
         {
             if (!RequestValidator.TryValidate(request, out var errors))
             {
                 return Results.ValidationProblem(errors);
             }
 
-            var updated = store.Update(id, request.Title!.Trim(), request.Description?.Trim(), request.Status!.Value);
+            var updated = await store.UpdateAsync(
+                id, request.Title!.Trim(), request.Description?.Trim(), request.Status!.Value, request.DueDate, ct);
             return updated is null ? Results.NotFound() : Results.Ok(updated);
         });
 
-        group.MapDelete("/{id:int}", (int id, ITaskStore store) =>
-            store.Delete(id) ? Results.NoContent() : Results.NotFound());
+        group.MapDelete("/{id:int}", async (int id, ITaskStore store, CancellationToken ct) =>
+            await store.DeleteAsync(id, ct) ? Results.NoContent() : Results.NotFound());
 
         return routes;
     }

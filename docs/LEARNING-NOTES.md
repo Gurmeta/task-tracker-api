@@ -37,3 +37,19 @@
 - **Неизменяеми обекти в хранилището**: `Update` заменя обекта с нов, вместо да го променя. Така обект, който друга заявка чете, не се променя по средата.
 - **Параметри на заявката**: `TaskItemStatus? status` се чете от `?status=Done`. Невалидна стойност дава автоматично `400`.
 - **`JsonStringEnumConverter(allowIntegerValues: false)`**: числа като `"status": 1` се отхвърлят.
+
+## Етап 4: SQLite през Entity Framework Core
+
+- **ORM** (Entity Framework Core) превежда C# обекти в SQL таблици и обратно. `DbSet<TaskItem> Tasks` е таблица.
+- **`DbContext`** (`AppDbContext`) е "сесия" към базата. Живее кратко: един екземпляр на HTTP заявка (**Scoped** lifetime). Затова `ITaskStore` също е Scoped, не Singleton.
+- **Primary constructor**: `class EfTaskStore(AppDbContext db)` е кратък начин да вземеш зависимост и да я ползваш в целия клас.
+- **Миграции** са версионирани скриптове за схемата. `dotnet ef migrations add Име` сравнява модела с последния snapshot и генерира `Up` (приложи) и `Down` (върни). Направихме две: `InitialCreate` и `AddDueDate` (виж как добавянето на поле е само `AddColumn`).
+- **`dotnet-ef` като локален tool** (`dotnet-tools.json`): версията е закована за проекта, всеки може да я възстанови с `dotnet tool restore`.
+- **`Database.Migrate()` при старт**: прилага чакащите миграции. Удобно за малък проект. В екип с няколко инстанции се прави като отделна стъпка в деплоя, за да не се състезават инстанциите.
+- **async/await**: заявките към базата са I/O и чакат. `await` освобождава нишката, докато чака, така че сървърът обслужва други заявки. Методите връщат `Task<T>`, а по конвенция имат суфикс `Async`.
+- **`CancellationToken`**: ако клиентът прекъсне заявката, токенът се отменя и EF спира заявката към базата. Minimal API го подава автоматично.
+- **`AsNoTracking()`**: за четене. EF не следи обектите за промени, което е по-бързо.
+- **`ExecuteDeleteAsync`**: изтрива директно с един SQL `DELETE`, без да зарежда обекта.
+- **Connection string от конфигурация**: `ConnectionStrings:Default` в `appsettings.json`. Може да се презапише с променлива на средата `ConnectionStrings__Default` (двойно подчертаване), което ще ползваме в Docker. Файловете `*.db` са в `.gitignore`.
+- **Value converter**: SQLite не пази часова зона, затова `DateTime` се чете като `Unspecified` и губи `Z`. Конверторът обявява всичко за UTC. Забелязахме го при тест: след рестарт `createdAt` нямаше `Z`.
+- **`HasConversion<string>()`**: enum се пази като текст (`"Done"`), не като число.

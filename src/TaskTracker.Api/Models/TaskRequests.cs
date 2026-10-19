@@ -10,6 +10,8 @@ public record CreateTaskRequest
 
     [StringLength(500)]
     public string? Description { get; init; }
+
+    public DateTime? DueDate { get; init; }
 }
 
 public record UpdateTaskRequest
@@ -23,4 +25,6 @@ public record UpdateTaskRequest
     // Nullable + Required: a missing status is an error instead of silently becoming Todo.
     [Required]
     public TaskItemStatus? Status { get; init; }
+
+    public DateTime? DueDate { get; init; }
 }
