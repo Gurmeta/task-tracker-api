@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Task Tracker API</title>
+  <meta name="description" content="A REST API built with C# and .NET 10: Minimal API, EF Core, SQLite, xUnit, Docker and GitHub Actions CI/CD.">
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --text: #1b2430;
+      --muted: #566377;
+      --border: #dde2ea;
+      --accent: #2f5fd0;
+      --accent-soft: #e7eefc;
+      --code-bg: #eef1f6;
+      --get: #1a7f4b;
+      --post: #2f5fd0;
+      --put: #a15c00;
+      --delete: #b3261e;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #12161d;
+        --surface: #1a2029;
+        --text: #e6eaf0;
+        --muted: #9aa6b8;
+        --border: #2a3342;
+        --accent: #7ea2ff;
+        --accent-soft: #1f2a44;
+        --code-bg: #232b38;
+        --get: #5fd39a;
+        --post: #7ea2ff;
+        --put: #f0b45a;
+        --delete: #ff8a80;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    main { max-width: 860px; margin: 0 auto; padding: 48px 16px 64px; }
+    h1 { font-size: 2.25rem; line-height: 1.2; margin: 0 0 8px; }
+    h2 { font-size: 1.35rem; margin: 48px 0 12px; }
+    p { margin: 0 0 12px; }
+    .lead { color: var(--muted); font-size: 1.1rem; }
+    a { color: var(--accent); }
+    .links { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; }
+    .links a {
+      padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--surface); text-decoration: none; font-weight: 600;
+    }
+    .links a:hover { border-color: var(--accent); }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .grid .card h3 { margin: 0 0 4px; font-size: 1rem; }
+    .grid .card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+    pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
+    pre {
+      background: var(--code-bg); padding: 14px 16px; border-radius: 8px;
+      overflow-x: auto; margin: 0 0 12px; font-size: 0.9rem;
+    }
+    pre code { background: none; padding: 0; }
+    .endpoint {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+      padding: 10px 0; border-top: 1px solid var(--border);
+    }
+    .endpoint:first-child { border-top: 0; }
+    .method {
+      min-width: 64px; text-align: center; padding: 2px 8px; border-radius: 6px;
+      font-weight: 700; font-size: 0.8rem; color: #fff;
+    }
+    .method.get { background: var(--get); }
+    .method.post { background: var(--post); }
+    .method.put { background: var(--put); }
+    .method.delete { background: var(--delete); }
+    @media (prefers-color-scheme: dark) { .method { color: #0d1117; } }
+    .codes { margin-left: auto; color: var(--muted); font-size: 0.9rem; }
+    .note { color: var(--muted); font-size: 0.9rem; }
+    figure { margin: 0; }
+    figure svg { width: 100%; height: auto; display: block; }
+    figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
+    footer { margin-top: 56px; color: var(--muted); font-size: 0.9rem; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Task Tracker API</h1>
+  <p class="lead">A REST API for managing tasks, built with C# and .NET 10. It is a learning project that follows a production-style workflow: tests, containers and CI/CD.</p>
+  <nav class="links" aria-label="Project links">
+    <a href="https://github.com/Gurmeta/task-tracker-api">Source on GitHub</a>
+    <a href="https://github.com/Gurmeta/task-tracker-api/actions">CI runs</a>
+    <a href="https://github.com/Gurmeta/task-tracker-api/pkgs/container/task-tracker-api">Container image</a>
+    <a href="openapi.json">OpenAPI document</a>
+  </nav>
+
+  <h2>What is inside</h2>
+  <div class="grid">
+    <div class="card"><h3>ASP.NET Core Minimal API</h3><p>Full CRUD with validation and correct HTTP status codes.</p></div>
+    <div class="card"><h3>EF Core and SQLite</h3><p>Versioned migrations applied at startup, UTC timestamps.</p></div>
+    <div class="card"><h3>xUnit tests</h3><p>Unit and integration tests, each with its own temporary database.</p></div>
+    <div class="card"><h3>Docker</h3><p>Multi-stage build, non-root user, health endpoint.</p></div>
+    <div class="card"><h3>GitHub Actions</h3><p>Build, test, vulnerability check, smoke-tested image published to GHCR.</p></div>
+  </div>
+
+  <h2>Architecture</h2>
+  <figure class="card">
+    <svg viewBox="0 0 760 150" role="img" aria-labelledby="arch-title arch-desc">
+      <title id="arch-title">Request flow through the application</title>
+      <desc id="arch-desc">A client calls the Minimal API endpoints, which validate the request and use the ITaskStore interface. Its EF Core implementation reads and writes a SQLite database.</desc>
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/>
+        </marker>
+      </defs>
+      <g font-family="system-ui, sans-serif" font-size="14" text-anchor="middle" fill="var(--text)">
+        <rect x="10" y="45" width="110" height="60" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+        <text x="65" y="80">Client</text>
+        <rect x="170" y="45" width="140" height="60" rx="10" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="240" y="70">Endpoints</text>
+        <text x="240" y="90" font-size="12" fill="var(--muted)">validation</text>
+        <rect x="360" y="45" width="140" height="60" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+        <text x="430" y="70">ITaskStore</text>
+        <text x="430" y="90" font-size="12" fill="var(--muted)">EfTaskStore</text>
+        <rect x="550" y="45" width="130" height="60" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+        <text x="615" y="70">EF Core</text>
+        <text x="615" y="90" font-size="12" fill="var(--muted)">SQLite file</text>
+      </g>
+      <g stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arrow)">
+        <line x1="120" y1="75" x2="168" y2="75"/>
+        <line x1="310" y1="75" x2="358" y2="75"/>
+        <line x1="500" y1="75" x2="548" y2="75"/>
+      </g>
+    </svg>
+    <figcaption>Endpoints depend on the <code>ITaskStore</code> interface, so the storage can be replaced without touching them. This is how the in-memory list became SQLite.</figcaption>
+  </figure>
+
+  <h2>Endpoints</h2>
+  <div class="card" id="endpoints" aria-live="polite">
+    <p class="note">Loading the endpoint list from the OpenAPI document…</p>
+  </div>
+
+  <h2>Run it</h2>
+  <p>The image is published to the GitHub Container Registry by the CI pipeline:</p>
+  <pre><code>docker run --rm -p 8080:8080 -v task-tracker-data:/data ghcr.io/gurmeta/task-tracker-api:latest
+curl http://localhost:8080/health</code></pre>
+  <p>Or run from source with the .NET 10 SDK:</p>
+  <pre><code>dotnet run --project src/TaskTracker.Api</code></pre>
+
+  <footer>
+    <p>GitHub Pages hosts static files only, so this page describes the API but does not run it.</p>
+  </footer>
+</main>
+
+<script>
+  // Builds the endpoint list from the OpenAPI document that CI exports next to this page.
+  (function () {
+    var box = document.getElementById("endpoints");
+
+    function render(spec) {
+      box.textContent = "";
+      var order = ["get", "post", "put", "delete"];
+      Object.keys(spec.paths || {}).forEach(function (path) {
+        order.forEach(function (method) {
+          var op = spec.paths[path][method];
+          if (!op) { return; }
+
+          var row = document.createElement("div");
+          row.className = "endpoint";
+
+          var badge = document.createElement("span");
+          badge.className = "method " + method;
+          badge.textContent = method.toUpperCase();
+
+          var name = document.createElement("code");
+          name.textContent = path;
+
+          var summary = document.createElement("span");
+          summary.textContent = op.summary || "";
+
+          var codes = document.createElement("span");
+          codes.className = "codes";
+          codes.textContent = Object.keys(op.responses || {}).join(", ");
+
+          row.append(badge, name, summary, codes);
+          box.appendChild(row);
+        });
+      });
+
+      if (!box.children.length) {
+        box.textContent = "No endpoints found in the OpenAPI document.";
+      }
+    }
+
+    fetch("openapi.json")
+      .then(function (r) {
+        if (!r.ok) { throw new Error("HTTP " + r.status); }
+        return r.json();
+      })
+      .then(render)
+      .catch(function () {
+        box.textContent = "";
+        var p = document.createElement("p");
+        p.className = "note";
+        p.textContent = "The OpenAPI document is generated during the Pages deployment and is not available in a local preview.";
+        box.appendChild(p);
+      });
+  })();
+</script>
+</body>
+</html>

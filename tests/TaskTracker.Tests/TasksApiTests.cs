@@ -254,4 +254,22 @@ public class TasksApiTests : IDisposable
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
+
+    [Theory]
+    [InlineData("/tasks", "post", new[] { "201", "400" })]
+    [InlineData("/tasks/{id}", "get", new[] { "200", "404" })]
+    [InlineData("/tasks/{id}", "put", new[] { "200", "400", "404" })]
+    [InlineData("/tasks/{id}", "delete", new[] { "204", "404" })]
+    public async Task OpenApiDocument_DescribesTheRealStatusCodes(string path, string method, string[] expectedCodes)
+    {
+        // The documentation on the project page is generated from this document,
+        // so it must list the same status codes the endpoints really return.
+        using var doc = JsonDocument.Parse(await _client.GetStringAsync("/openapi/v1.json"));
+        var responses = doc.RootElement.GetProperty("paths").GetProperty(path).GetProperty(method).GetProperty("responses");
+
+        foreach (var code in expectedCodes)
+        {
+            Assert.True(responses.TryGetProperty(code, out _), $"{method.ToUpper()} {path} should document {code}.");
+        }
+    }
 }
