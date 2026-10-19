@@ -11,7 +11,7 @@ It is a learning project that follows a production-style workflow: tests, contai
 | 2     | `TaskItem` model and in-memory endpoints           | done    |
 | 3     | Full CRUD, validation, correct HTTP status codes   | done    |
 | 4     | SQLite with Entity Framework Core                  | done    |
-| 5     | xUnit tests                                        | planned |
+| 5     | xUnit tests                                        | done    |
 | 6     | Dockerfile                                         | planned |
 | 7     | GitHub Actions: build, test, publish image to GHCR | planned |
 
