@@ -4,9 +4,10 @@ namespace TaskTracker.Api.Services;
 
 public interface ITaskStore
 {
-    IReadOnlyList<TaskItem> GetAll();
-    TaskItem? GetById(int id);
-    TaskItem Add(TaskItem task);
-    TaskItem? Update(int id, string title, string? description, TaskItemStatus status);
-    bool Delete(int id);
+    Task<IReadOnlyList<TaskItem>> GetAllAsync(TaskItemStatus? status, CancellationToken ct);
+    Task<TaskItem?> GetByIdAsync(int id, CancellationToken ct);
+    Task<TaskItem> AddAsync(TaskItem task, CancellationToken ct);
+    Task<TaskItem?> UpdateAsync(
+        int id, string title, string? description, TaskItemStatus status, DateTime? dueDate, CancellationToken ct);
+    Task<bool> DeleteAsync(int id, CancellationToken ct);
 }
