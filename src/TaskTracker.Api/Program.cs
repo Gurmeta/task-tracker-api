@@ -8,10 +8,14 @@ using TaskTracker.Api.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // The OpenAPI document reports the same version as GET /version.
+// ASP.NET adds the address the app was started on (for example http://localhost:5000),
+// which is wrong once the document is published. With no "servers" entry, OpenAPI
+// clients use the address the document was loaded from.
 builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer((document, _, _) =>
     {
         document.Info.Version = AppVersion.Current;
+        document.Servers?.Clear();
         return Task.CompletedTask;
     }));
 
