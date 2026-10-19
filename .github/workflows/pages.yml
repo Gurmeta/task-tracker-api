@@ -1,0 +1,68 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "src/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write # publish to GitHub Pages
+      id-token: write # lets deploy-pages verify the deployment origin
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      # The API describes itself in OpenAPI. Start it in Development mode, save the
+      # document next to the static page, and the page renders the endpoint list from it.
+      - name: Export OpenAPI document
+        run: |
+          dotnet build src/TaskTracker.Api --configuration Release
+
+          ASPNETCORE_ENVIRONMENT=Development \
+          ASPNETCORE_URLS=http://localhost:5000 \
+          ConnectionStrings__Default="Data Source=${RUNNER_TEMP}/openapi.db" \
+          dotnet run --no-build --no-launch-profile --configuration Release --project src/TaskTracker.Api &
+          api_pid=$!
+
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:5000/health > /dev/null && break
+            sleep 1
+          done
+
+          curl -fsS http://localhost:5000/openapi/v1.json -o site/openapi.json
+          kill "$api_pid"
+          test -s site/openapi.json
+
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

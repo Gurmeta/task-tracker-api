@@ -13,13 +13,19 @@ public static class TaskEndpoints
 
         // GET /tasks or GET /tasks?status=Done
         group.MapGet("/", async (TaskItemStatus? status, ITaskStore store, CancellationToken ct) =>
-            Results.Ok(await store.GetAllAsync(status, ct)));
+            Results.Ok(await store.GetAllAsync(status, ct)))
+            .WithSummary("List tasks, optionally filtered by status")
+            .Produces<IReadOnlyList<TaskItem>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest);
 
         group.MapGet("/{id:int}", async (int id, ITaskStore store, CancellationToken ct) =>
         {
             var task = await store.GetByIdAsync(id, ct);
             return task is null ? Results.NotFound() : Results.Ok(task);
-        });
+        })
+            .WithSummary("Get one task")
+            .Produces<TaskItem>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
 
         group.MapPost("/", async (CreateTaskRequest request, ITaskStore store, CancellationToken ct) =>
         {
@@ -35,7 +41,10 @@ public static class TaskEndpoints
                 DueDate = request.DueDate
             }, ct);
             return Results.Created($"/tasks/{created.Id}", created);
-        });
+        })
+            .WithSummary("Create a task")
+            .Produces<TaskItem>(StatusCodes.Status201Created)
+            .ProducesValidationProblem();
 
         group.MapPut("/{id:int}", async (int id, UpdateTaskRequest request, ITaskStore store, CancellationToken ct) =>
         {
@@ -47,10 +56,17 @@ public static class TaskEndpoints
             var updated = await store.UpdateAsync(
                 id, request.Title!.Trim(), request.Description?.Trim(), request.Status!.Value, request.DueDate, ct);
             return updated is null ? Results.NotFound() : Results.Ok(updated);
-        });
+        })
+            .WithSummary("Replace a task")
+            .Produces<TaskItem>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound);
 
         group.MapDelete("/{id:int}", async (int id, ITaskStore store, CancellationToken ct) =>
-            await store.DeleteAsync(id, ct) ? Results.NoContent() : Results.NotFound());
+            await store.DeleteAsync(id, ct) ? Results.NoContent() : Results.NotFound())
+            .WithSummary("Delete a task")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status404NotFound);
 
         return routes;
     }
