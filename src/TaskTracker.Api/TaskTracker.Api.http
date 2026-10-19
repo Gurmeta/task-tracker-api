@@ -1,6 +1,17 @@
-@TaskTracker.Api_HostAddress = http://localhost:5074
+@host = http://localhost:5074
 
-GET {{TaskTracker.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### List all tasks
+GET {{host}}/tasks
 
-###
+### Get one task
+GET {{host}}/tasks/1
+
+### Create a task
+POST {{host}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Learn C#",
+  "description": "Finish stage 2",
+  "status": "Todo"
+}
