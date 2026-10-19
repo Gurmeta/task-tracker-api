@@ -7,6 +7,7 @@
   <meta name="description" content="A REST API built with C# and .NET 10: Minimal API, EF Core, SQLite, xUnit, Docker and GitHub Actions CI/CD.">
   <style>
     :root {
+      color-scheme: light dark;
       --bg: #f7f8fa;
       --surface: #ffffff;
       --text: #1b2430;
@@ -86,7 +87,9 @@
     .codes { margin-left: auto; color: var(--muted); font-size: 0.9rem; }
     .note { color: var(--muted); font-size: 0.9rem; }
     figure { margin: 0; }
-    figure svg { width: 100%; height: auto; display: block; }
+    /* On narrow screens the diagram keeps a readable size and scrolls sideways. */
+    .diagram { overflow-x: auto; }
+    figure svg { width: 100%; min-width: 620px; height: auto; display: block; }
     figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
     .release { margin: 16px 0 0; color: var(--muted); }
     .release a { font-weight: 700; }
@@ -121,6 +124,7 @@
 
   <h2>Architecture</h2>
   <figure class="card">
+    <div class="diagram" tabindex="0" role="region" aria-label="Architecture diagram (scrolls sideways on small screens)">
     <svg viewBox="0 0 760 150" role="img" aria-labelledby="arch-title arch-desc">
       <title id="arch-title">Request flow through the application</title>
       <desc id="arch-desc">A client calls the Minimal API endpoints, which validate the request and use the ITaskStore interface. Its EF Core implementation reads and writes a SQLite database.</desc>
@@ -148,6 +152,7 @@
         <line x1="500" y1="75" x2="548" y2="75"/>
       </g>
     </svg>
+    </div>
     <figcaption>Endpoints depend on the <code>ITaskStore</code> interface, so the storage can be replaced without touching them. This is how the in-memory list became SQLite.</figcaption>
   </figure>
 
