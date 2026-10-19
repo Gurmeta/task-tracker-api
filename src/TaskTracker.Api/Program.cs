@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using TaskTracker.Api;
 using TaskTracker.Api.Data;
@@ -42,9 +43,20 @@ builder.Services.AddScoped<ITaskStore, EfTaskStore>();
 var app = builder.Build();
 
 // Create or update the database schema at startup by applying pending migrations.
-using (var scope = app.Services.CreateScope())
+try
 {
+    using var scope = app.Services.CreateScope();
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+}
+catch (SqliteException ex)
+{
+    // The most common cause is a folder that does not exist or is not writable by the
+    // container user (for example a bind-mounted /data). Say so instead of printing a stack trace.
+    var path = new SqliteConnectionStringBuilder(connectionString).DataSource;
+    app.Logger.LogCritical(
+        "Cannot open or update the database '{Path}' ({Message}). Check that its folder exists and is writable by the user running the app.",
+        path, ex.Message);
+    return 1;
 }
 
 if (app.Environment.IsDevelopment())
@@ -66,6 +78,7 @@ app.MapVersionEndpoint();
 app.MapTaskEndpoints();
 
 app.Run();
+return 0;
 
 // Makes Program visible to the test project (WebApplicationFactory<Program>).
 public partial class Program;

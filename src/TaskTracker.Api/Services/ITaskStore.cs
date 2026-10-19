@@ -4,7 +4,8 @@ namespace TaskTracker.Api.Services;
 
 public interface ITaskStore
 {
-    Task<IReadOnlyList<TaskItem>> GetAllAsync(TaskItemStatus? status, CancellationToken ct);
+    Task<IReadOnlyList<TaskItem>> GetAllAsync(TaskItemStatus? status, int limit, int offset, CancellationToken ct);
+    Task<int> CountAsync(TaskItemStatus? status, CancellationToken ct);
     Task<TaskItem?> GetByIdAsync(int id, CancellationToken ct);
     Task<TaskItem> AddAsync(TaskItem task, CancellationToken ct);
     Task<TaskItem?> UpdateAsync(

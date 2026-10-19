@@ -6,15 +6,17 @@ namespace TaskTracker.Api.Services;
 
 public class EfTaskStore(AppDbContext db) : ITaskStore
 {
-    public async Task<IReadOnlyList<TaskItem>> GetAllAsync(TaskItemStatus? status, CancellationToken ct)
+    public async Task<IReadOnlyList<TaskItem>> GetAllAsync(
+        TaskItemStatus? status, int limit, int offset, CancellationToken ct) =>
+        await Filter(status).OrderBy(t => t.Id).Skip(offset).Take(limit).ToListAsync(ct);
+
+    public async Task<int> CountAsync(TaskItemStatus? status, CancellationToken ct) =>
+        await Filter(status).CountAsync(ct);
+
+    private IQueryable<TaskItem> Filter(TaskItemStatus? status)
     {
         var query = db.Tasks.AsNoTracking();
-        if (status is not null)
-        {
-            query = query.Where(t => t.Status == status);
-        }
-
-        return await query.OrderBy(t => t.Id).ToListAsync(ct);
+        return status is null ? query : query.Where(t => t.Status == status);
     }
 
     public async Task<TaskItem?> GetByIdAsync(int id, CancellationToken ct) =>

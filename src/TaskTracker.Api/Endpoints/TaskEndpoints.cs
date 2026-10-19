@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using TaskTracker.Api.Models;
 using TaskTracker.Api.Services;
 using TaskTracker.Api.Validation;
@@ -6,17 +7,52 @@ namespace TaskTracker.Api.Endpoints;
 
 public static class TaskEndpoints
 {
+    // A list never returns an unbounded number of rows, however large the table grows.
+    private const int DefaultLimit = 100;
+    private const int MaxLimit = 500;
+
+    // Task requests are tiny (a title and a description). Anything bigger is rejected with 413.
+    private const long MaxRequestBodyBytes = 64 * 1024;
+
     // Extension method: lets Program.cs call app.MapTaskEndpoints().
     public static IEndpointRouteBuilder MapTaskEndpoints(this IEndpointRouteBuilder routes)
     {
-        var group = routes.MapGroup("/tasks").WithTags("Tasks");
+        var group = routes.MapGroup("/tasks")
+            .WithTags("Tasks")
+            .WithMetadata(new RequestSizeLimitAttribute(MaxRequestBodyBytes));
 
-        // GET /tasks or GET /tasks?status=Done
-        group.MapGet("/", async (TaskItemStatus? status, ITaskStore store, CancellationToken ct) =>
-            Results.Ok(await store.GetAllAsync(status, ct)))
-            .WithSummary("List tasks, optionally filtered by status")
+        // GET /tasks, GET /tasks?status=Done, GET /tasks?limit=20&offset=40
+        group.MapGet("/", async (
+            TaskItemStatus? status, int? limit, int? offset,
+            HttpContext http, ITaskStore store, CancellationToken ct) =>
+        {
+            var pageLimit = limit ?? DefaultLimit;
+            var pageOffset = offset ?? 0;
+
+            var errors = new Dictionary<string, string[]>();
+            if (pageLimit is < 1 or > MaxLimit)
+            {
+                errors["limit"] = [$"limit must be between 1 and {MaxLimit}."];
+            }
+            if (pageOffset < 0)
+            {
+                errors["offset"] = ["offset must be 0 or greater."];
+            }
+            if (errors.Count > 0)
+            {
+                return Results.ValidationProblem(errors);
+            }
+
+            // The total lets a client know whether there are more pages to ask for.
+            http.Response.Headers["X-Total-Count"] = (await store.CountAsync(status, ct)).ToString();
+            return Results.Ok(await store.GetAllAsync(status, pageLimit, pageOffset, ct));
+        })
+            .WithSummary($"List tasks, optionally filtered by status (one page, up to {MaxLimit})")
+            .WithDescription(
+                $"Returns at most `limit` tasks (default {DefaultLimit}, maximum {MaxLimit}) ordered by id, " +
+                "starting after `offset` tasks. The `X-Total-Count` response header has the total number of matching tasks.")
             .Produces<IReadOnlyList<TaskItem>>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status400BadRequest);
+            .ProducesValidationProblem();
 
         group.MapGet("/{id:int}", async (int id, ITaskStore store, CancellationToken ct) =>
         {
