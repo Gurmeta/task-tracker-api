@@ -7,13 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-19
+
+### Added
+
+- `GET /tasks` is paged: `limit` (1 to 500, default 100) and `offset`, with the total in the `X-Total-Count` header. Out-of-range values return `400`.
+- Requests larger than 64 KB are rejected with `413`.
+- A database that cannot be opened at start-up logs a clear message and exits with code 1 instead of printing a stack trace.
+- Favicon, a semantic endpoint list and screen reader labels for the response codes on the project page.
+
 ### Changed
 
+- `GET /tasks` returns at most 100 tasks when `limit` is not given. Earlier versions returned all of them.
 - Every error response now has a problem details JSON body (404, malformed JSON, unknown status filter, unsupported content type, unexpected failures). Status codes are unchanged.
 - The release workflow refuses tags whose commit is not on `main`.
 - Dependabot uses Conventional Commit prefixes and groups the test package updates.
 
-### Added
+### Documentation
 
 - "Scope and limitations" and an error format section in the README.
 - Tests for the error response format and for the OpenAPI document not being served in Production.
@@ -57,6 +67,7 @@ First stable release.
 - Release workflow that publishes versioned images and a GitHub Release when a `v*` tag is pushed.
 - Dependabot updates for NuGet packages and GitHub Actions.
 
-[Unreleased]: https://github.com/Gurmeta/task-tracker-api/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/Gurmeta/task-tracker-api/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Gurmeta/task-tracker-api/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/Gurmeta/task-tracker-api/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Gurmeta/task-tracker-api/releases/tag/v1.0.0
