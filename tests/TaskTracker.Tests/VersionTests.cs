@@ -27,6 +27,22 @@ public class VersionTests : IDisposable
     }
 
     [Fact]
+    public async Task OpenApiDocument_DoesNotAdvertiseLocalServers()
+    {
+        using var devFactory = _factory.WithWebHostBuilder(b => b.UseEnvironment("Development"));
+        using var client = devFactory.CreateClient();
+
+        var json = await client.GetStringAsync("/openapi/v1.json");
+
+        using var doc = JsonDocument.Parse(json);
+        if (doc.RootElement.TryGetProperty("servers", out var servers))
+        {
+            Assert.Equal(0, servers.GetArrayLength());
+        }
+        Assert.DoesNotContain("localhost", json);
+    }
+
+    [Fact]
     public async Task OpenApiDocument_UsesTheAppVersion()
     {
         // The OpenAPI endpoint is only mapped in Development.
