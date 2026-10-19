@@ -1,12 +1,19 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using TaskTracker.Api;
 using TaskTracker.Api.Data;
 using TaskTracker.Api.Endpoints;
 using TaskTracker.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi();
+// The OpenAPI document reports the same version as GET /version.
+builder.Services.AddOpenApi(options =>
+    options.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Info.Version = AppVersion.Current;
+        return Task.CompletedTask;
+    }));
 
 // Enum values are written as words ("Todo") instead of numbers (0) in JSON,
 // and numbers are rejected as input.
@@ -40,6 +47,7 @@ if (app.Environment.IsDevelopment())
 // Liveness probe for Docker, Kubernetes and load balancers: 200 means the process is up.
 app.MapHealthChecks("/health");
 
+app.MapVersionEndpoint();
 app.MapTaskEndpoints();
 
 app.Run();
