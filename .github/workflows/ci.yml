@@ -3,7 +3,6 @@ name: CI
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -76,7 +75,6 @@ jobs:
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
-            type=semver,pattern={{version}}
 
       # Build once into the local Docker daemon so we can test the exact image we would publish.
       - name: Build image
@@ -122,7 +120,8 @@ jobs:
         if: always()
         run: docker rm -f task-tracker || true
 
-      # Publishing happens only for pushes to main or version tags, never for pull requests.
+      # Publishing happens only for pushes to main, never for pull requests.
+      # Version tags are handled by release.yml.
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
