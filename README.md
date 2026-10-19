@@ -131,7 +131,7 @@ Three workflows live in [`.github/workflows`](.github/workflows):
 
 - `ci.yml` runs on pull requests and pushes to `main`. It builds, runs the tests, checks that migrations
   match the model, fails on vulnerable packages, and builds and smoke-tests the image.
-  Pushes to `main` publish the `latest` and `sha-*` image tags.
+  Pushes to `main` publish the `edge` and `sha-*` image tags (development builds).
 - `release.yml` runs on `v*` tags. It checks the tag against the project version, runs the tests,
   publishes the versioned image and creates the GitHub Release.
 - `pages.yml` runs on pushes to `main`. It exports the OpenAPI document and deploys the project page to GitHub Pages.
@@ -146,11 +146,12 @@ and by the OpenAPI document.
 
 Pushing a tag such as `v1.0.0` publishes these image tags:
 
-| Tag      | Meaning                                |
-| -------- | -------------------------------------- |
-| `1.0.0`  | Exact release (use this in production) |
-| `1.0`    | Latest patch of the 1.0 line           |
-| `latest` | Latest stable release                  |
+| Tag      | Meaning                                     |
+| -------- | ------------------------------------------- |
+| `1.0.0`  | Exact release (use this in production)      |
+| `1.0`    | Latest patch of the 1.0 line                |
+| `latest` | Latest stable release                       |
+| `edge`   | Latest build of `main` (not for production) |
 
 Pre-release tags such as `v1.0.0-rc.1` publish only their own tag. See the [CHANGELOG](CHANGELOG.md)
 and the [Releases page](https://github.com/Gurmeta/task-tracker-api/releases).

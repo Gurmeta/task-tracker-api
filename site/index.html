@@ -174,7 +174,7 @@
   <div class="card">
     <ol class="steps">
       <li><strong>Pull request:</strong> build, test, check that EF Core migrations match the model, fail on vulnerable NuGet packages, then build the image and smoke-test the running container (it must not run as root). Nothing is published.</li>
-      <li><strong>Merge to main:</strong> the same checks run again, the image is published to GHCR as <code>latest</code>, and this page is redeployed.</li>
+      <li><strong>Merge to main:</strong> the same checks run again, the image is published to GHCR as <code>edge</code> (a development build), and this page is redeployed.</li>
       <li><strong>Version tag (<code>v1.0.0</code>):</strong> the release workflow checks the tag against the project version, tests, publishes the image as <code>1.0.0</code>, <code>1.0</code> and <code>latest</code>, and creates a GitHub Release with generated notes.</li>
     </ol>
   </div>
