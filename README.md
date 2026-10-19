@@ -5,15 +5,15 @@ It is a learning project that follows a production-style workflow: tests, contai
 
 ## Status
 
-| Stage | Topic | State |
-|---|---|---|
-| 1 | Solution, Web API and test project | done |
-| 2 | `TaskItem` model and in-memory endpoints | done |
-| 3 | Full CRUD, validation, correct HTTP status codes | planned |
-| 4 | SQLite with Entity Framework Core | planned |
-| 5 | xUnit tests | planned |
-| 6 | Dockerfile | planned |
-| 7 | GitHub Actions: build, test, publish image to GHCR | planned |
+| Stage | Topic                                              | State   |
+| ----- | -------------------------------------------------- | ------- |
+| 1     | Solution, Web API and test project                 | done    |
+| 2     | `TaskItem` model and in-memory endpoints           | done    |
+| 3     | Full CRUD, validation, correct HTTP status codes   | done    |
+| 4     | SQLite with Entity Framework Core                  | planned |
+| 5     | xUnit tests                                        | planned |
+| 6     | Dockerfile                                         | planned |
+| 7     | GitHub Actions: build, test, publish image to GHCR | planned |
 
 ## Requirements
 
@@ -29,6 +29,16 @@ In Development the OpenAPI document is available at `/openapi/v1.json`.
 Sample requests live in `src/TaskTracker.Api/TaskTracker.Api.http`
 (use the REST Client extension for VS Code).
 
+## API
+
+| Method | Path          | Success                   | Errors   |
+| ------ | ------------- | ------------------------- | -------- |
+| GET    | `/tasks`      | 200 (optional `?status=`) | 400      |
+| GET    | `/tasks/{id}` | 200                       | 404      |
+| POST   | `/tasks`      | 201 + `Location`          | 400      |
+| PUT    | `/tasks/{id}` | 200                       | 400, 404 |
+| DELETE | `/tasks/{id}` | 204                       | 404      |
+
 ## Test
 
 ```bash
@@ -37,7 +47,7 @@ dotnet test
 
 ## Project layout
 
-```
+```text
 src/TaskTracker.Api/     Web API
 tests/TaskTracker.Tests/ xUnit tests
 docs/                    Notes and project site

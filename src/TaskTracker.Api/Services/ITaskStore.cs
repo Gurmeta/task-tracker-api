@@ -7,4 +7,6 @@ public interface ITaskStore
     IReadOnlyList<TaskItem> GetAll();
     TaskItem? GetById(int id);
     TaskItem Add(TaskItem task);
+    TaskItem? Update(int id, string title, string? description, TaskItemStatus status);
+    bool Delete(int id);
 }

@@ -3,6 +3,9 @@
 ### List all tasks
 GET {{host}}/tasks
 
+### List tasks filtered by status (Todo, InProgress, Done)
+GET {{host}}/tasks?status=Done
+
 ### Get one task
 GET {{host}}/tasks/1
 
@@ -12,6 +15,26 @@ Content-Type: application/json
 
 {
   "title": "Learn C#",
-  "description": "Finish stage 2",
-  "status": "Todo"
+  "description": "Finish stage 3"
+}
+
+### Update a task (full replace)
+PUT {{host}}/tasks/1
+Content-Type: application/json
+
+{
+  "title": "Learn C# and .NET",
+  "description": "Stage 3 done",
+  "status": "InProgress"
+}
+
+### Delete a task
+DELETE {{host}}/tasks/1
+
+### Invalid request: empty title returns 400 with a validation problem
+POST {{host}}/tasks
+Content-Type: application/json
+
+{
+  "title": ""
 }
