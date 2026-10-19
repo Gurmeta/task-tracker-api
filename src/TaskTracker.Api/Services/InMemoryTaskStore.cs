@@ -34,4 +34,37 @@ public class InMemoryTaskStore : ITaskStore
             return task;
         }
     }
+
+    public TaskItem? Update(int id, string title, string? description, TaskItemStatus status)
+    {
+        lock (_lock)
+        {
+            var index = _tasks.FindIndex(t => t.Id == id);
+            if (index < 0)
+            {
+                return null;
+            }
+
+            // Replace the object instead of changing it in place, so objects already
+            // handed out to other requests are never modified while they are being read.
+            var updated = new TaskItem
+            {
+                Id = id,
+                Title = title,
+                Description = description,
+                Status = status,
+                CreatedAt = _tasks[index].CreatedAt
+            };
+            _tasks[index] = updated;
+            return updated;
+        }
+    }
+
+    public bool Delete(int id)
+    {
+        lock (_lock)
+        {
+            return _tasks.RemoveAll(t => t.Id == id) > 0;
+        }
+    }
 }

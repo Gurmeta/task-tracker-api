@@ -9,7 +9,7 @@ It is a learning project that follows a production-style workflow: tests, contai
 |---|---|---|
 | 1 | Solution, Web API and test project | done |
 | 2 | `TaskItem` model and in-memory endpoints | done |
-| 3 | Full CRUD, validation, correct HTTP status codes | planned |
+| 3 | Full CRUD, validation, correct HTTP status codes | done |
 | 4 | SQLite with Entity Framework Core | planned |
 | 5 | xUnit tests | planned |
 | 6 | Dockerfile | planned |

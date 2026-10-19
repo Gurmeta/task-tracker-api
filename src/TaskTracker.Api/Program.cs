@@ -1,14 +1,15 @@
 using System.Text.Json.Serialization;
-using TaskTracker.Api.Models;
+using TaskTracker.Api.Endpoints;
 using TaskTracker.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 
-// Enum values are written as words ("Todo") instead of numbers (0) in JSON.
+// Enum values are written as words ("Todo") instead of numbers (0) in JSON,
+// and numbers are rejected as input.
 builder.Services.ConfigureHttpJsonOptions(options =>
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false)));
 
 // Singleton: one shared instance, because the in-memory list must survive between requests.
 builder.Services.AddSingleton<ITaskStore, InMemoryTaskStore>();
@@ -20,19 +21,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.MapGet("/tasks", (ITaskStore store) => Results.Ok(store.GetAll()));
-
-app.MapGet("/tasks/{id:int}", (int id, ITaskStore store) =>
-{
-    var task = store.GetById(id);
-    return task is null ? Results.NotFound() : Results.Ok(task);
-});
-
-app.MapPost("/tasks", (TaskItem task, ITaskStore store) =>
-{
-    var created = store.Add(task);
-    return Results.Created($"/tasks/{created.Id}", created);
-});
+app.MapTaskEndpoints();
 
 app.Run();
 
