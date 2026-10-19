@@ -36,8 +36,39 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
-      - name: Test
-        run: dotnet test --no-build --configuration Release
+      # coverlet.collector writes a Cobertura report. EF Core migrations are generated code,
+      # so they are left out of the numbers.
+      - name: Test with coverage
+        run: |
+          dotnet test --no-build --configuration Release             --collect:"XPlat Code Coverage" --results-directory coverage             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/**"
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          report="$(find coverage -name coverage.cobertura.xml | head -n 1)"
+          if [ -z "$report" ]; then
+            echo "No coverage report found."
+            exit 0
+          fi
+          python3 - "$report" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          root = ET.parse(sys.argv[1]).getroot()
+          print("### Test coverage")
+          print()
+          print("| Metric | Covered |")
+          print("| ------ | ------- |")
+          print(f"| Lines | {float(root.get('line-rate')) * 100:.1f}% |")
+          print(f"| Branches | {float(root.get('branch-rate')) * 100:.1f}% |")
+          PY
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-report
+          path: coverage/**/coverage.cobertura.xml
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Check that migrations match the model
         run: |

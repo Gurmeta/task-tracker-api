@@ -488,3 +488,6 @@ $RECYCLE.BIN/
 
 # Generated during the Pages deployment
 site/openapi.json
+
+# Local test coverage output
+coverage/
