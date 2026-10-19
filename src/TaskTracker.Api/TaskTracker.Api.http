@@ -1,4 +1,12 @@
+# Local `dotnet run` listens on port 5074. A Docker container listens on 8080
+# (change the host below to http://localhost:8080).
 @host = http://localhost:5074
+
+### Health check (liveness probe)
+GET {{host}}/health
+
+### Running service version
+GET {{host}}/version
 
 ### List all tasks
 GET {{host}}/tasks

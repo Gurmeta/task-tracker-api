@@ -51,7 +51,7 @@ Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 dotnet run --project src/TaskTracker.Api
 ```
 
-The URL is printed at startup. In Development the OpenAPI document is served at `/openapi/v1.json`.
+With `dotnet run` the API listens on `http://localhost:5074` (the examples below use port 8080, the Docker port). In Development the OpenAPI document is served at `/openapi/v1.json`.
 Sample requests are in `src/TaskTracker.Api/TaskTracker.Api.http` (REST Client extension for VS Code).
 
 ### Try it

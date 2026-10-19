@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Test coverage report in CI (job summary and downloadable artifact).
+- `/health` and `/version` requests in the sample `.http` file.
+
 ### Changed
 
 - The `latest` image tag now moves only on stable releases. Builds of `main` are published as `edge` and `sha-*`.
