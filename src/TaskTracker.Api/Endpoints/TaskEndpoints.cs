@@ -10,6 +10,7 @@ public static class TaskEndpoints
     // A list never returns an unbounded number of rows, however large the table grows.
     private const int DefaultLimit = 100;
     private const int MaxLimit = 500;
+    private const int MaxSearchLength = 100;
 
     // Task requests are tiny (a title and a description). Anything bigger is rejected with 413.
     private const long MaxRequestBodyBytes = 64 * 1024;
@@ -21,9 +22,10 @@ public static class TaskEndpoints
             .WithTags("Tasks")
             .WithMetadata(new RequestSizeLimitAttribute(MaxRequestBodyBytes));
 
-        // GET /tasks, GET /tasks?status=Done, GET /tasks?limit=20&offset=40
+        // GET /tasks?status=Done&search=docs&overdue=true&sort=dueDate&order=desc&limit=20&offset=40
         group.MapGet("/", async (
-            TaskItemStatus? status, int? limit, int? offset,
+            TaskItemStatus? status, string? search, bool? overdue, DateTime? dueBefore,
+            string? sort, string? order, int? limit, int? offset,
             HttpContext http, ITaskStore store, CancellationToken ct) =>
         {
             var pageLimit = limit ?? DefaultLimit;
@@ -38,21 +40,50 @@ public static class TaskEndpoints
             {
                 errors["offset"] = ["offset must be 0 or greater."];
             }
+
+            var sortField = TaskSortField.Id;
+            if (sort is not null && !Enum.TryParse(sort, ignoreCase: true, out sortField))
+            {
+                errors["sort"] = ["sort must be one of: id, createdAt, dueDate, title."];
+            }
+
+            var descending = false;
+            if (order is not null)
+            {
+                if (order.Equals("desc", StringComparison.OrdinalIgnoreCase)) descending = true;
+                else if (!order.Equals("asc", StringComparison.OrdinalIgnoreCase)) errors["order"] = ["order must be asc or desc."];
+            }
+
+            if (search is { Length: > MaxSearchLength })
+            {
+                errors["search"] = [$"search must be at most {MaxSearchLength} characters."];
+            }
             if (errors.Count > 0)
             {
                 return Results.ValidationProblem(errors);
             }
 
+            var query = new TaskQuery(
+                status, search, overdue ?? false, dueBefore, sortField, descending, pageLimit, pageOffset);
+
             // The total lets a client know whether there are more pages to ask for.
-            http.Response.Headers["X-Total-Count"] = (await store.CountAsync(status, ct)).ToString();
-            return Results.Ok(await store.GetAllAsync(status, pageLimit, pageOffset, ct));
+            http.Response.Headers["X-Total-Count"] = (await store.CountAsync(query, ct)).ToString();
+            return Results.Ok(await store.GetAllAsync(query, ct));
         })
-            .WithSummary($"List tasks, optionally filtered by status (one page, up to {MaxLimit})")
+            .WithSummary($"List tasks: filter, search, sort and page (up to {MaxLimit} per page)")
             .WithDescription(
-                $"Returns at most `limit` tasks (default {DefaultLimit}, maximum {MaxLimit}) ordered by id, " +
-                "starting after `offset` tasks. The `X-Total-Count` response header has the total number of matching tasks.")
+                $"Returns at most `limit` tasks (default {DefaultLimit}, maximum {MaxLimit}) starting after `offset` tasks. " +
+                "Filters: `status`, `search` (title or description, case-insensitive), `overdue=true` (past due date and not Done), " +
+                "`dueBefore`. Sorting: `sort` = id (default), createdAt, dueDate, title and `order` = asc (default) or desc. " +
+                "Tasks without a due date always come last when sorting by dueDate. " +
+                "The `X-Total-Count` response header has the total number of matching tasks.")
             .Produces<IReadOnlyList<TaskItem>>(StatusCodes.Status200OK)
             .ProducesValidationProblem();
+
+        group.MapGet("/stats", async (ITaskStore store, CancellationToken ct) =>
+            Results.Ok(await store.GetStatsAsync(ct)))
+            .WithSummary("Task counts by status and the number of overdue tasks")
+            .Produces<TaskStats>(StatusCodes.Status200OK);
 
         group.MapGet("/{id:int}", async (int id, ITaskStore store, CancellationToken ct) =>
         {
@@ -94,6 +125,39 @@ public static class TaskEndpoints
             return updated is null ? TaskNotFound(id) : Results.Ok(updated);
         })
             .WithSummary("Replace a task")
+            .Produces<TaskItem>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapPatch("/{id:int}", async (int id, PatchTaskRequest request, ITaskStore store, CancellationToken ct) =>
+        {
+            if (!RequestValidator.TryValidate(request, out var errors))
+            {
+                return Results.ValidationProblem(errors);
+            }
+
+            var title = request.Title?.Trim();
+            if (title is { Length: 0 })
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["title"] = ["The title cannot be empty."]
+                });
+            }
+
+            if (title is null && request.Description is null && request.Status is null && request.DueDate is null)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    [""] = ["Send at least one of: title, description, status, dueDate."]
+                });
+            }
+
+            var patched = await store.PatchAsync(
+                id, title, request.Description?.Trim(), request.Status, request.DueDate, ct);
+            return patched is null ? TaskNotFound(id) : Results.Ok(patched);
+        })
+            .WithSummary("Change only the properties that are sent")
             .Produces<TaskItem>(StatusCodes.Status200OK)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status404NotFound);

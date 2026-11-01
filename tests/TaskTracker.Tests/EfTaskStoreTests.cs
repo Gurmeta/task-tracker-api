@@ -71,8 +71,8 @@ public class EfTaskStoreTests : IDisposable
         await _store.AddAsync(new TaskItem { Title = "b", Status = TaskItemStatus.Todo }, CancellationToken.None);
         await _store.AddAsync(new TaskItem { Title = "c", Status = TaskItemStatus.Done }, CancellationToken.None);
 
-        var done = await _store.GetAllAsync(TaskItemStatus.Done, 100, 0, CancellationToken.None);
-        var all = await _store.GetAllAsync(null, 100, 0, CancellationToken.None);
+        var done = await _store.GetAllAsync(new TaskQuery(Status: TaskItemStatus.Done), CancellationToken.None);
+        var all = await _store.GetAllAsync(new TaskQuery(), CancellationToken.None);
 
         Assert.Equal(["a", "c"], done.Select(t => t.Title));
         Assert.Equal(["a", "b", "c"], all.Select(t => t.Title));
@@ -86,8 +86,8 @@ public class EfTaskStoreTests : IDisposable
             await _store.AddAsync(new TaskItem { Title = title }, CancellationToken.None);
         }
 
-        var page = await _store.GetAllAsync(null, 2, 1, CancellationToken.None);
-        var pastTheEnd = await _store.GetAllAsync(null, 2, 10, CancellationToken.None);
+        var page = await _store.GetAllAsync(new TaskQuery(Limit: 2, Offset: 1), CancellationToken.None);
+        var pastTheEnd = await _store.GetAllAsync(new TaskQuery(Limit: 2, Offset: 10), CancellationToken.None);
 
         Assert.Equal(["b", "c"], page.Select(t => t.Title));
         Assert.Empty(pastTheEnd);
@@ -100,8 +100,8 @@ public class EfTaskStoreTests : IDisposable
         await _store.AddAsync(new TaskItem { Title = "b", Status = TaskItemStatus.Todo }, CancellationToken.None);
         await _store.AddAsync(new TaskItem { Title = "c", Status = TaskItemStatus.Done }, CancellationToken.None);
 
-        Assert.Equal(3, await _store.CountAsync(null, CancellationToken.None));
-        Assert.Equal(2, await _store.CountAsync(TaskItemStatus.Done, CancellationToken.None));
+        Assert.Equal(3, await _store.CountAsync(new TaskQuery(), CancellationToken.None));
+        Assert.Equal(2, await _store.CountAsync(new TaskQuery(Status: TaskItemStatus.Done), CancellationToken.None));
     }
 
     [Fact]

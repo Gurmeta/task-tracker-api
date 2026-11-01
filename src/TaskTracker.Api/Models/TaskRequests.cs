@@ -28,3 +28,18 @@ public record UpdateTaskRequest
 
     public DateTime? DueDate { get; init; }
 }
+
+// Partial update: only the properties present in the JSON body are changed.
+// A property that is absent (or null) is left alone. To clear a due date, use PUT.
+public record PatchTaskRequest
+{
+    [StringLength(100, MinimumLength = 1)]
+    public string? Title { get; init; }
+
+    [StringLength(500)]
+    public string? Description { get; init; }
+
+    public TaskItemStatus? Status { get; init; }
+
+    public DateTime? DueDate { get; init; }
+}

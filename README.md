@@ -112,14 +112,39 @@ curl -i http://localhost:8080/tasks/999
 | ------ | ------------- | ------------------------- | -------- | ----------------------- |
 | GET    | `/health`     | 200                       |          | Liveness probe          |
 | GET    | `/version`    | 200                       |          | Running service version |
-| GET    | `/tasks`      | 200 (`?status=`, `?limit=`, `?offset=`) | 400 | List tasks (one page) |
+| GET    | `/tasks`      | 200 (filters, `?sort=`, paging) | 400 | List tasks (one page) |
+| GET    | `/tasks/stats` | 200                      |          | Counts by status and overdue |
 | GET    | `/tasks/{id}` | 200                       | 404      | Get one task            |
 | POST   | `/tasks`      | 201 + `Location`          | 400      | Create a task           |
 | PUT    | `/tasks/{id}` | 200                       | 400, 404 | Replace a task          |
+| PATCH  | `/tasks/{id}` | 200                       | 400, 404 | Change only the sent fields |
 | DELETE | `/tasks/{id}` | 204                       | 404      | Delete a task           |
 
 Constraints: `title` is required (max 100 characters), `description` is optional (max 500).
 Request bodies larger than 64 KB are rejected with `413`.
+
+### Searching, sorting and filtering
+
+All query parameters of `GET /tasks` can be combined:
+
+| Parameter     | Values                                  | Meaning                                              |
+| ------------- | --------------------------------------- | ---------------------------------------------------- |
+| `status`      | `Todo`, `InProgress`, `Done`            | Only tasks with this status                          |
+| `search`      | text (max 100 characters)               | Case-insensitive match in title or description       |
+| `overdue`     | `true`                                  | Due date in the past and not `Done`                  |
+| `dueBefore`   | ISO 8601 date                           | Due date earlier than this                           |
+| `sort`        | `id` (default), `createdAt`, `dueDate`, `title` | Sort field; tasks without a due date come last |
+| `order`       | `asc` (default), `desc`                 | Sort direction                                       |
+
+```bash
+curl "http://localhost:8080/tasks?search=docs&overdue=true&sort=dueDate&order=desc"
+curl http://localhost:8080/tasks/stats
+# {"total":12,"todo":5,"inProgress":4,"done":3,"overdue":2}
+```
+
+`PATCH /tasks/{id}` changes only the properties in the body (`title`, `description`, `status`, `dueDate`),
+for example `{"status": "Done"}`. An empty body returns `400`. To clear a due date, use `PUT`.
+Tasks have `updatedAt` (set on every change) and `completedAt` (set when the status becomes `Done`, cleared when it leaves `Done`).
 
 ### Pagination
 
