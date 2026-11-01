@@ -15,4 +15,6 @@ public class TaskItem
     public TaskItemStatus Status { get; set; } = TaskItemStatus.Todo;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? DueDate { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
 }

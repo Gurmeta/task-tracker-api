@@ -17,6 +17,12 @@ GET {{host}}/tasks?status=Done
 ### List one page of tasks (limit 1-500, default 100; see the X-Total-Count header)
 GET {{host}}/tasks?limit=20&offset=0
 
+### Search, filter and sort (combine freely)
+GET {{host}}/tasks?search=docs&overdue=true&sort=dueDate&order=desc
+
+### Task counts by status and overdue
+GET {{host}}/tasks/stats
+
 ### Get one task
 GET {{host}}/tasks/1
 
@@ -38,6 +44,14 @@ Content-Type: application/json
   "title": "Learn C# and .NET",
   "description": "Stage 3 done",
   "status": "InProgress"
+}
+
+### Change only some fields (partial update)
+PATCH {{host}}/tasks/1
+Content-Type: application/json
+
+{
+  "status": "Done"
 }
 
 ### Delete a task

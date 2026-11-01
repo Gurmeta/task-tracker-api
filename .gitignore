@@ -491,3 +491,6 @@ site/openapi.json
 
 # Local test coverage output
 coverage/
+
+# Local AI assistant settings
+.claude/

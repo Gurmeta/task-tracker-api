@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `PATCH /tasks/{id}` changes only the properties that are sent.
+- `GET /tasks` supports `search`, `overdue`, `dueBefore`, `sort` and `order`.
+- `GET /tasks/stats` returns the number of tasks per status and the number of overdue tasks.
+- Tasks have `updatedAt` and `completedAt` timestamps (new migration `AddUpdatedAndCompletedAt`; existing tasks get `null`).
+
 ## [1.1.0] - 2026-10-19
 
 ### Added
