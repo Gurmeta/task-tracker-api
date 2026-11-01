@@ -20,6 +20,7 @@
       --get: #1a7f4b;
       --post: #2f5fd0;
       --put: #a15c00;
+      --patch: #7a3fb0;
       --delete: #b3261e;
     }
     @media (prefers-color-scheme: dark) {
@@ -35,6 +36,7 @@
         --get: #5fd39a;
         --post: #7ea2ff;
         --put: #f0b45a;
+        --patch: #c9a0ff;
         --delete: #ff8a80;
       }
     }
@@ -88,6 +90,7 @@
     .method.get { background: var(--get); }
     .method.post { background: var(--post); }
     .method.put { background: var(--put); }
+    .method.patch { background: var(--patch); }
     .method.delete { background: var(--delete); }
     @media (prefers-color-scheme: dark) { .method { color: #0d1117; } }
     .codes { margin-left: auto; color: var(--muted); font-size: 0.9rem; }
@@ -122,6 +125,7 @@
   <h2>What is inside</h2>
   <div class="grid">
     <div class="card"><h3>ASP.NET Core Minimal API</h3><p>Full CRUD with validation and correct HTTP status codes.</p></div>
+    <div class="card"><h3>Search, sort and stats</h3><p>Filter by status or overdue, sort by due date, partial updates with PATCH.</p></div>
     <div class="card"><h3>EF Core and SQLite</h3><p>Versioned migrations applied at startup, UTC timestamps.</p></div>
     <div class="card"><h3>xUnit tests</h3><p>Unit and integration tests, each with its own temporary database.</p></div>
     <div class="card"><h3>Docker</h3><p>Multi-stage build, non-root user, health endpoint.</p></div>
@@ -179,10 +183,21 @@
   "description": null,
   "status": "Todo",
   "createdAt": "2026-10-19T13:00:00Z",
-  "dueDate": "2026-12-01T00:00:00Z"
+  "dueDate": "2026-12-01T00:00:00Z",
+  "updatedAt": null,
+  "completedAt": null
 }</code></pre>
   <p>List tasks one page at a time. The <code>X-Total-Count</code> response header has the total:</p>
   <pre><code>curl -i "http://localhost:8080/tasks?limit=20&amp;offset=40"</code></pre>
+  <p>Search, filter and sort. The parameters can be combined:</p>
+  <pre><code>curl "http://localhost:8080/tasks?search=docs&amp;overdue=true&amp;sort=dueDate&amp;order=desc"</code></pre>
+  <p>Change only some fields with <code>PATCH</code>. Setting <code>Done</code> also sets <code>completedAt</code>:</p>
+  <pre><code>curl -X PATCH http://localhost:8080/tasks/1 \
+  -H "Content-Type: application/json" \
+  -d '{"status": "Done"}'</code></pre>
+  <p>Counts per status and the number of overdue tasks:</p>
+  <pre><code>curl http://localhost:8080/tasks/stats
+{"total":12,"todo":5,"inProgress":4,"done":3,"overdue":2}</code></pre>
   <p class="note">Invalid input returns <code>400</code> with the errors listed per field. <code>GET /version</code> reports the running version.</p>
 
   <h2>CI/CD</h2>
@@ -190,13 +205,13 @@
     <ol class="steps">
       <li><strong>Pull request:</strong> build, test, check that EF Core migrations match the model, fail on vulnerable NuGet packages, then build the image and smoke-test the running container (it must not run as root). Nothing is published.</li>
       <li><strong>Merge to main:</strong> the same checks run again, the image is published to GHCR as <code>edge</code> (a development build), and this page is redeployed.</li>
-      <li><strong>Version tag (<code>v1.0.0</code>):</strong> the release workflow checks the tag against the project version, tests, publishes the image as <code>1.0.0</code>, <code>1.0</code> and <code>latest</code>, and creates a GitHub Release with generated notes.</li>
+      <li><strong>Version tag (<code>v1.2.0</code>):</strong> the release workflow checks the tag against the project version, tests, publishes the image as <code>1.2.0</code>, <code>1.2</code> and <code>latest</code>, and creates a GitHub Release with generated notes.</li>
     </ol>
   </div>
   <p class="note">Workflows use minimal permissions and the built-in <code>GITHUB_TOKEN</code>. Third-party actions are pinned to commit SHAs and Dependabot proposes updates weekly.</p>
 
   <h2>Run it</h2>
-  <p>The image is published to the GitHub Container Registry by the pipeline. Pin a version such as <code>:1.0.0</code> for real use:</p>
+  <p>The image is published to the GitHub Container Registry by the pipeline. Pin a version such as <code>:1.2.0</code> for real use:</p>
   <pre><code>docker run --rm -p 8080:8080 -v task-tracker-data:/data ghcr.io/gurmeta/task-tracker-api:latest
 curl http://localhost:8080/health</code></pre>
   <p>Or run from source with the .NET 10 SDK:</p>
@@ -214,7 +229,7 @@ curl http://localhost:8080/health</code></pre>
 
     function render(spec) {
       box.textContent = "";
-      var order = ["get", "post", "put", "delete"];
+      var order = ["get", "post", "put", "patch", "delete"];
       var list = document.createElement("ul");
       Object.keys(spec.paths || {}).forEach(function (path) {
         order.forEach(function (method) {
