@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-01
+
 ### Added
 
 - `PATCH /tasks/{id}` changes only the properties that are sent.
@@ -74,7 +76,8 @@ First stable release.
 - Release workflow that publishes versioned images and a GitHub Release when a `v*` tag is pushed.
 - Dependabot updates for NuGet packages and GitHub Actions.
 
-[Unreleased]: https://github.com/Gurmeta/task-tracker-api/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Gurmeta/task-tracker-api/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Gurmeta/task-tracker-api/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Gurmeta/task-tracker-api/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/Gurmeta/task-tracker-api/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Gurmeta/task-tracker-api/releases/tag/v1.0.0
