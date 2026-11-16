@@ -16,7 +16,7 @@ RUN dotnet publish src/TaskTracker.Api/TaskTracker.Api.csproj \
     --output /app/publish
 
 # ---- Runtime stage: only the ASP.NET runtime, much smaller than the SDK image ----
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS final
 WORKDIR /app
 
 # The SQLite file lives in /data. Mount a volume there to keep data between container runs.
